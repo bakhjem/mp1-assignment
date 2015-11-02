@@ -160,9 +160,12 @@ int MP1Node::introduceSelfToGroup(Address *joinaddr) {
  * DESCRIPTION: Wind up this node and clean up state
  */
 int MP1Node::finishUpThisNode(){
-   /*
-    * Your code goes here
-    */
+   if(memberNode->inited){         
+   	free(memberNode);
+-  	memberNode->inGroup =0;
+	memberNode->inGroup =0;
+     }
+     return 0;
 }
 
 /**
