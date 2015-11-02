@@ -46,11 +46,11 @@ int main(int argc, char *argv[]) {
  */
 Application::Application(char *infile) {
 	int i;
-	par = new Params();
-	srand (time(NULL));
+	par = new Params();//khoi tao params
+	srand (time(NULL)); //cho random thoi gian
 	par->setparams(infile);
-	log = new Log(par);
-	en = new EmulNet(par);
+	log = new Log(par); //khoi tao log voi par
+	en = new EmulNet(par);//khoi tao emulnet voi par
 	mp1 = (MP1Node **) malloc(par->EN_GPSZ * sizeof(MP1Node *));
 
 	/*
