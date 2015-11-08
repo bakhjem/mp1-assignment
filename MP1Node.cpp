@@ -19,12 +19,12 @@
 MP1Node::MP1Node(Member *member, Params *params, EmulNet *emul, Log *log, Address *address) {
 	for( int i = 0; i < 6; i++ ) {
 		NULLADDR[i] = 0;
-	}
-	this->memberNode = member;
-	this->emulNet = emul;
-	this->log = log;
-	this->par = params;
-	this->memberNode->addr = *address;
+		}
+		this->memberNode = member;
+		this->emulNet = emul;
+		this->log = log;
+		this->par = params;
+		this->memberNode->addr = *address;
 }
 
 /**
@@ -66,12 +66,12 @@ int MP1Node::enqueueWrapper(void *env, char *buff, int size) {
  */
 void MP1Node::nodeStart(char *servaddrstr, short servport) {
     Address joinaddr;
-    joinaddr = getJoinAddress();
+    joinaddr = getJoinAddress();//dia chi la 1.0.0.0
 
     // Self booting routines
     if( initThisNode(&joinaddr) == -1 ) {
 #ifdef DEBUGLOG
-        log->LOG(&memberNode->addr, "init_thisnode failed. Exit.");
+        log->LOG(&memberNode->addr, "init_thisnode failed. Exit.");//ghi log
 #endif
         exit(1);
     }
@@ -215,9 +215,27 @@ void MP1Node::checkMessages() {
  * DESCRIPTION: Message handler for different message types
  */
 bool MP1Node::recvCallBack(void *env, char *data, int size ) {
-	/*
-	 * Your code goes here
-	 */
+if (size < (int)sizeof(MessageHdr)) {
++#ifdef DEBUGLOG
++        log->LOG(&memberNode->addr, "Message received with size less than MessageHdr. Ignored.");
++#endif
++        return false;
++    }
++MessageHdr * msg = (MessageHdr *)data;
++
+     switch (msg->msgType) {
+         case JOINREQ:
+             return recvJoinReq(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
+   
+         case HEARTBEATREQ:
+             return recvHeartbeatReq(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
+         case HEARTBEATREP:
+             return recvHeartbeatRep(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
+         case DUMMYLASTMSGTYPE:
+             return false;
+}         
+-    return false;
++  
 }
 
 /**
@@ -229,12 +247,24 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
  */
 void MP1Node::nodeLoopOps() {
 
-	/*
-	 * Your code goes here
-	 */
+	if (par->getcurrtime() > 3 && memberNode->memberList.size() > 1) {
+
+       memberNode->memberList.begin()->heartbeat++;
+       memberNode->memberList.begin()->timestamp = par->getcurrtime();
+ 
+         int pos = rand() % (memberNode->memberList.size() - 1) + 1;
+         MemberListEntry& member = memberNode->memberList[pos];
+ 
+         if (par->getcurrtime() - member.timestamp > TFAIL) {
 
     return;
-}
+	}
+	Address memberAddr;
+         memcpy(&memberAddr.addr[0], &member.id, sizeof(int));
+         memcpy(&memberAddr.addr[4], &member.port, sizeof(short));
+          sendMemberList("HEARTBEATREQ", HEARTBEATREQ, &memberAddr);
+     }
+ }
 
 /**
  * FUNCTION NAME: isNullAddress
